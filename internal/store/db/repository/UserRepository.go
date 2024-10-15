@@ -51,7 +51,7 @@ func (userRepository *UserRepository) Create(ctx context.Context, user *entity.U
 }
 
 func (userRepository *UserRepository) Update(ctx context.Context, user *entity.User) (*entity.User, error) {
-	_, err := userRepository.Conn.Exec(ctx, "UPDATE users set name = $1, email=$2 WHERE id = $3", user.Name, user.Email, user.ID)
+	_, err := userRepository.Conn.Exec(ctx, "UPDATE users SET name = $1, email=$2 WHERE id = $3", user.Name, user.Email, user.ID)
 	if err != nil {
 		return nil, err
 	}

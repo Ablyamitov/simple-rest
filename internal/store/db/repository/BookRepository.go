@@ -31,11 +31,6 @@ func (r *BookRepository) GetALL(ctx context.Context) ([]entity.Book, error) {
 	return books, nil
 }
 
-func (r *BookRepository) Create(ctx context.Context, book *entity.Book) error {
-	_, err := r.Conn.Exec(ctx, "INSERT INTO books (title, author) VALUES ($1, $2)", book.Title, book.Author)
-	return err
-}
-
 func (r *BookRepository) GetByID(ctx context.Context, id int) (*entity.Book, error) {
 	book := &entity.Book{}
 	err := r.Conn.QueryRow(ctx, "SELECT id, title, author, available FROM books WHERE id=$1", id).Scan(&book.ID, &book.Title, &book.Author, &book.Available)
@@ -44,4 +39,34 @@ func (r *BookRepository) GetByID(ctx context.Context, id int) (*entity.Book, err
 	}
 	return book, nil
 
+}
+
+func (r *BookRepository) Create(ctx context.Context, book *entity.Book) error {
+	err := r.Conn.QueryRow(ctx,
+		"INSERT INTO books (title, author) VALUES ($1, $2) RETURNING books.id,books.available",
+		book.Title, book.Author).Scan(&book.ID, &book.Available)
+	return err
+}
+
+func (r *BookRepository) Update(ctx context.Context, book *entity.Book) (*entity.Book, error) {
+
+	_, err := r.Conn.Exec(ctx,
+		"UPDATE books SET title = $1, author = $2 WHERE id = $3", book.Title, book.Author, book.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = r.Conn.QueryRow(ctx,
+		"SELECT id, title, author, available FROM books WHERE id = $1", book.ID).
+		Scan(&book.ID, &book.Title, &book.Author, &book.Available)
+
+	if err != nil {
+		return nil, err
+	}
+	return book, nil
+}
+
+func (r *BookRepository) Delete(ctx context.Context, id int) error {
+	_, err := r.Conn.Exec(ctx, "DELETE FROM books WHERE id = $1", id)
+	return err
 }
