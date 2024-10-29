@@ -3,14 +3,14 @@ server:
   host: "localhost"
 
 db:
-  url: "postgresql://postgres:12345678@localhost:5432/library"
+  url: "postgresql://postgres:12345678@db:5432/library"
 
 migration:
   path: "./internal/store/db/migrations"
-  url: "postgresql://postgres:12345678@localhost:5432/library?sslmode=disable"
+  url: "postgresql://postgres:12345678@db:5432/library?sslmode=disable"
 
 redis:
-  addr: "localhost:6379"
+  addr: "redis:6379"
   password: "1234"
   db: 0
 

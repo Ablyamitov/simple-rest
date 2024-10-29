@@ -1,0 +1,49 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:latest
+    container_name: postgres_container
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345678
+      POSTGRES_DB: library
+    ports:
+      - "5435:5432"
+  redis:
+    image: redis:latest
+    container_name: redis_container
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./internal/store/redis/redis-data:/data
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    command: >
+      sh -c "mkdir -p /usr/local/etc/redis &&
+             echo 'bind 0.0.0.0' > /usr/local/etc/redis/redis.conf &&
+             echo 'requirepass 1234' >> /usr/local/etc/redis/redis.conf &&
+             echo 'appendonly yes' >> /usr/local/etc/redis/redis.conf &&
+             echo 'appendfsync everysec' >> /usr/local/etc/redis/redis.conf &&
+             redis-server /usr/local/etc/redis/redis.conf"
+    restart: unless-stopped
+  app:
+    container_name: app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+      - redis
+    environment:
+      - CONFIG_PATH=./configs/config.docker.yaml

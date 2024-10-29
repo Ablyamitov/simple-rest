@@ -1,6 +1,6 @@
-package entity
+package dto
 
-type Book struct {
+type BookDTO struct {
 	ID        int    `json:"id"`
 	Title     string `json:"title" validate:"required,notblank"`
 	Author    string `json:"author" validate:"required,notblank"`
