@@ -28,6 +28,7 @@ func main() {
 
 	//postgres
 	conn := db.Connect(config.DB.URL)
+
 	defer func(conn *pgx.Conn, ctx context.Context) {
 		err := conn.Close(ctx)
 		if err != nil {
@@ -35,6 +36,13 @@ func main() {
 				"main")
 		}
 	}(conn, context.Background())
+
+	//gorm
+	gormConn := db.ConnectGorm(config.DB.URL)
+	//err := gormConn.AutoMigrate(&entity.User{}, &entity.Book{})
+	//if err != nil {
+	//	log.Fatalf("Could not automigrate gorm db: %v", err)
+	//}
 
 	//redis
 	redisClient := redisconn.Connect(config.Redis.Addr, config.Redis.Password, config.Redis.DB)
@@ -46,7 +54,7 @@ func main() {
 		}
 	}(redisClient)
 
-	userRepository := repository.NewUserRepository(conn, redisClient)
+	userRepository := repository.NewUserRepository(conn, redisClient, gormConn)
 	userHandler := handlers.NewUserHandler(userRepository)
 	authHandler := handlers.NewAuthHandler(config.App.Secret, userRepository)
 

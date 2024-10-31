@@ -8,6 +8,7 @@ import (
 	"github.com/Ablyamitov/simple-rest/internal/store/db/entity"
 	"github.com/jackc/pgx/v5"
 	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 	"log/slog"
 )
 
@@ -68,51 +69,55 @@ type UserRepository interface {
 type UserRepositoryImpl struct {
 	Conn        *pgx.Conn
 	RedisClient *redis.Client
+	GormConn    *gorm.DB
 }
 
-func NewUserRepository(conn *pgx.Conn, redisClient *redis.Client) UserRepository {
-	return &UserRepositoryImpl{Conn: conn, RedisClient: redisClient}
+func NewUserRepository(conn *pgx.Conn, redisClient *redis.Client, gormConn *gorm.DB) UserRepository {
+	return &UserRepositoryImpl{Conn: conn, RedisClient: redisClient, GormConn: gormConn}
 }
 
 func (userRepository *UserRepositoryImpl) GetAll(ctx context.Context) ([]entity.User, error) {
 
-	rows, err := userRepository.Conn.Query(ctx, SELECT_ALL_USERS)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
 	var users []entity.User
-	for rows.Next() {
-		var user entity.User
-		err = rows.Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.Role)
-		if err != nil {
-			return nil, err
-		}
-		users = append(users, user)
-	}
-
-	//TODO: Идея сделать через горутину
-	rows, err = userRepository.Conn.Query(ctx, SELECT_ALL_USERS_BOOKS)
-	if err != nil {
-		return nil, err
-
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var userID, bookID int
-		var bookTitle, bookAuthor string
-		var bookAvailable bool
-
-		err := rows.Scan(&userID, &bookID, &bookTitle, &bookAuthor, &bookAvailable)
-		if err != nil {
-			return nil, err
-		}
-
-		users[userID-1].Books = append(users[userID-1].Books, &entity.Book{ID: bookID, Title: bookTitle, Author: bookAuthor, Available: bookAvailable})
-	}
-	return users, nil
+	result := userRepository.GormConn.Preload("Books").Find(&users)
+	return users, result.Error
+	//rows, err := userRepository.Conn.Query(ctx, SELECT_ALL_USERS)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//defer rows.Close()
+	//
+	//var users []entity.User
+	//for rows.Next() {
+	//	var user entity.User
+	//	err = rows.Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.Role)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	users = append(users, user)
+	//}
+	//
+	////TODO: Идея сделать через горутину
+	//rows, err = userRepository.Conn.Query(ctx, SELECT_ALL_USERS_BOOKS)
+	//if err != nil {
+	//	return nil, err
+	//
+	//}
+	//defer rows.Close()
+	//
+	//for rows.Next() {
+	//	var userID, bookID int
+	//	var bookTitle, bookAuthor string
+	//	var bookAvailable bool
+	//
+	//	err := rows.Scan(&userID, &bookID, &bookTitle, &bookAuthor, &bookAvailable)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	users[userID-1].Books = append(users[userID-1].Books, &entity.Book{ID: bookID, Title: bookTitle, Author: bookAuthor, Available: bookAvailable})
+	//}
+	//return users, nil
 
 }
 

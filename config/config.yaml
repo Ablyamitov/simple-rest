@@ -5,6 +5,9 @@ server:
 db:
   url: "postgresql://postgres:12345678@localhost:5432/library"
 
+gorm:
+  db
+
 migration:
   path: "./migrations"
   url: "postgresql://postgres:12345678@localhost:5432/library?sslmode=disable"

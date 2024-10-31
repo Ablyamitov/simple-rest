@@ -183,8 +183,8 @@ func (userHandler *UserHandlerImpl) Delete(w http.ResponseWriter, r *http.Reques
 func (userHandler *UserHandlerImpl) TakeBook(w http.ResponseWriter, r *http.Request) {
 
 	type TakeBookDTO struct {
-		UserId int `json:"userId" validate:"required, notblank, gte=0"`
-		BookId int `json:"bookId" validate:"required, notblank, gte=0"`
+		UserId int `json:"userId" validate:"required,notblank,gte=0"`
+		BookId int `json:"bookId" validate:"required,notblank,gte=0"`
 	}
 
 	var takeBookDTO *TakeBookDTO
