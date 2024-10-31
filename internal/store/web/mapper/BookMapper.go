@@ -22,11 +22,3 @@ func MapDTOToBook(dto *dto.BookDTO) *entity.Book {
 		Available: dto.Available,
 	}
 }
-
-func MapBookSliceToDTO(books []entity.Book) []dto.BookDTO {
-	var booksDto []dto.BookDTO
-	for _, book := range books {
-		booksDto = append(booksDto, *MapBookToDTO(&book))
-	}
-	return booksDto
-}

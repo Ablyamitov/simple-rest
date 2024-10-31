@@ -17,6 +17,16 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
+var (
+	errNotUniqueEmail        = errors.New("user with the same email already exists")
+	errNotFoundWithSameEmail = errors.New("user with the same email is not exists")
+	errInvalidPassword       = errors.New("invalid password")
+	errGenerateToken         = errors.New("could not generate token")
+	errEmptyToken            = errors.New("authentication failed, because token is empty")
+	errNotValidToken         = errors.New("token is not valid")
+	errAccessDenied          = errors.New("role does not have permission")
+)
+
 type AuthHandler interface {
 	Register(w http.ResponseWriter, r *http.Request)
 	Login(w http.ResponseWriter, r *http.Request)
@@ -39,7 +49,6 @@ func (authHandler *AuthHandlerImpl) Register(w http.ResponseWriter, r *http.Requ
 
 	var userDTO dto.UserDTO
 	if err := json.NewDecoder(r.Body).Decode(&userDTO); err != nil {
-		//wrapper.SendError(w, http.StatusBadRequest, err, "AuthHandlerImpl.Register")
 		wrapper.LogError(err.Error(), "AuthHandlerImpl.Register")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -48,21 +57,18 @@ func (authHandler *AuthHandlerImpl) Register(w http.ResponseWriter, r *http.Requ
 	var existingUser entity.User
 	existingUser, err := authHandler.UserRepository.GetByEmail(context.Background(), mapper.MapDTOToUser(&userDTO).Email)
 	if err != nil {
-		//wrapper.SendError(w, http.StatusBadRequest, err, "AuthHandlerImpl.Register")
 		wrapper.LogError(err.Error(), "AuthHandlerImpl.Register")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if existingUser.ID != 0 {
-		//wrapper.SendError(w, http.StatusBadRequest, errors.New("user with the same email already exists"), "AuthHandlerImpl.Register")
-		wrapper.LogError(errors.New("user with the same email already exists").Error(), "AuthHandlerImpl.Register")
-		http.Error(w, errors.New("user with the same email already exists").Error(), http.StatusBadRequest)
+		wrapper.LogError(errNotUniqueEmail.Error(), "AuthHandlerImpl.Register")
+		http.Error(w, errNotUniqueEmail.Error(), http.StatusBadRequest)
 		return
 	}
 
 	userDTO.Password, err = utils.GenerateHashPassword(userDTO.Password)
 	if err != nil {
-		//wrapper.SendError(w, http.StatusInternalServerError, err, "AuthHandlerImpl.Register")
 		wrapper.LogError(err.Error(), "AuthHandlerImpl.Register")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -71,7 +77,6 @@ func (authHandler *AuthHandlerImpl) Register(w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		wrapper.LogError(err.Error(), "AuthHandlerImpl.Register")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		//wrapper.SendError(w, http.StatusInternalServerError, err, "AuthHandlerImpl.Register")
 		return
 	}
 
@@ -79,7 +84,6 @@ func (authHandler *AuthHandlerImpl) Register(w http.ResponseWriter, r *http.Requ
 	if err := json.NewEncoder(w).Encode(userDTO); err != nil {
 		wrapper.LogError(err.Error(), "AuthHandlerImpl.Register")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		//wrapper.SendError(w, http.StatusInternalServerError, err, "AuthHandlerImpl.Register")
 	}
 }
 
@@ -88,7 +92,6 @@ func (authHandler *AuthHandlerImpl) Login(w http.ResponseWriter, r *http.Request
 	var userDTO dto.UserDTO
 
 	if err := json.NewDecoder(r.Body).Decode(&userDTO); err != nil {
-		//wrapper.SendError(w, http.StatusBadRequest, err, "AuthHandlerImpl.Login")
 		wrapper.LogError(err.Error(), "AuthHandlerImpl.Login")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -96,23 +99,20 @@ func (authHandler *AuthHandlerImpl) Login(w http.ResponseWriter, r *http.Request
 	var existingUser entity.User
 	existingUser, err := authHandler.UserRepository.GetByEmail(context.Background(), mapper.MapDTOToUser(&userDTO).Email)
 	if err != nil {
-		//wrapper.SendError(w, http.StatusBadRequest, err, "AuthHandlerImpl.Login")
 		wrapper.LogError(err.Error(), "AuthHandlerImpl.Login")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if existingUser.ID == 0 {
-		//wrapper.SendError(w, http.StatusBadRequest, errors.New("user with the same email is not exists"), "AuthHandlerImpl.Login")
-		wrapper.LogError(errors.New("user with the same email is not exists").Error(), "AuthHandlerImpl.Login")
-		http.Error(w, errors.New("user with the same email is not exists").Error(), http.StatusBadRequest)
+		wrapper.LogError(errNotFoundWithSameEmail.Error(), "AuthHandlerImpl.Login")
+		http.Error(w, errNotFoundWithSameEmail.Error(), http.StatusBadRequest)
 		return
 	}
 
 	errHash := utils.CompareHashPassword(userDTO.Password, existingUser.Password)
 	if !errHash {
-		//wrapper.SendError(w, http.StatusBadRequest, errors.New("invalid password"), "AuthHandlerImpl.Login")
-		wrapper.LogError(errors.New("invalid password").Error(), "AuthHandlerImpl.Login")
-		http.Error(w, errors.New("invalid password").Error(), http.StatusBadRequest)
+		wrapper.LogError(errInvalidPassword.Error(), "AuthHandlerImpl.Login")
+		http.Error(w, errInvalidPassword.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -131,9 +131,8 @@ func (authHandler *AuthHandlerImpl) Login(w http.ResponseWriter, r *http.Request
 	tokenString, err := token.SignedString([]byte(authHandler.Secret))
 
 	if err != nil {
-		//wrapper.SendError(w, http.StatusInternalServerError, errors.New("could not generate token"), "AuthHandlerImpl.Login")
-		wrapper.LogError(errors.New("could not generate token").Error(), "AuthHandlerImpl.Login")
-		http.Error(w, errors.New("could not generate token").Error(), http.StatusInternalServerError)
+		wrapper.LogError(errGenerateToken.Error(), "AuthHandlerImpl.Login")
+		http.Error(w, errGenerateToken.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -143,7 +142,6 @@ func (authHandler *AuthHandlerImpl) Login(w http.ResponseWriter, r *http.Request
 
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(existingUser); err != nil {
-		//wrapper.SendError(w, http.StatusInternalServerError, err, "AuthHandlerImpl.Login")
 		wrapper.LogError(err.Error(), "AuthHandlerImpl.Login")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -153,9 +151,8 @@ func (authHandler *AuthHandlerImpl) CheckAuth(w http.ResponseWriter, r *http.Req
 
 	bearerToken := r.Header.Get("Authorization")
 	if bearerToken == "" {
-		//wrapper.SendError(w, http.StatusUnauthorized, errors.New("authentication failed, because token is empty"), "AuthHandlerImpl.CheckAuth")
-		wrapper.LogError(errors.New("authentication failed, because token is empty").Error(), "AuthHandlerImpl.CheckAuth")
-		http.Error(w, errors.New("authentication failed, because token is empty").Error(), http.StatusUnauthorized)
+		wrapper.LogError(errEmptyToken.Error(), "AuthHandlerImpl.CheckAuth")
+		http.Error(w, errEmptyToken.Error(), http.StatusUnauthorized)
 		return
 	}
 	token := bearerToken[7:]
@@ -163,16 +160,14 @@ func (authHandler *AuthHandlerImpl) CheckAuth(w http.ResponseWriter, r *http.Req
 	claims, err := utils.ParseToken(token, authHandler.Secret)
 
 	if err != nil {
-		//wrapper.SendError(w, http.StatusUnauthorized, errors.New("token is not valid"), "AuthHandlerImpl.CheckAuth")
-		wrapper.LogError(errors.New("token is not valid").Error(), "AuthHandlerImpl.CheckAuth")
-		http.Error(w, errors.New("token is not valid").Error(), http.StatusUnauthorized)
+		wrapper.LogError(errNotValidToken.Error(), "AuthHandlerImpl.CheckAuth")
+		http.Error(w, errNotValidToken.Error(), http.StatusUnauthorized)
 		return
 	}
 
 	if claims.Role != "user" && claims.Role != "admin" {
-		//wrapper.SendError(w, http.StatusUnauthorized, errors.New("role does not have permission"), "AuthHandlerImpl.CheckAuth")
-		wrapper.LogError(errors.New("role does not have permission").Error(), "AuthHandlerImpl.CheckAuth")
-		http.Error(w, errors.New("role does not have permission").Error(), http.StatusUnauthorized)
+		wrapper.LogError(errAccessDenied.Error(), "AuthHandlerImpl.CheckAuth")
+		http.Error(w, errAccessDenied.Error(), http.StatusUnauthorized)
 		return
 	}
 

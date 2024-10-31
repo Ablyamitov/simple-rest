@@ -2,10 +2,12 @@ package validation
 
 import (
 	"fmt"
-	"github.com/Ablyamitov/simple-rest/internal/app/wrapper"
-	"github.com/go-playground/validator/v10"
 	"reflect"
 	"strings"
+
+	"github.com/Ablyamitov/simple-rest/internal/app/wrapper"
+
+	"github.com/go-playground/validator/v10"
 )
 
 var validate = validator.New()

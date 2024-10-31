@@ -3,9 +3,11 @@ package db
 import (
 	"context"
 	"fmt"
-	"github.com/Ablyamitov/simple-rest/internal/app/wrapper"
-	"github.com/jackc/pgx/v5"
 	"os"
+
+	"github.com/Ablyamitov/simple-rest/internal/app/wrapper"
+
+	"github.com/jackc/pgx/v5"
 )
 
 func Connect(connectionUrl string) *pgx.Conn {

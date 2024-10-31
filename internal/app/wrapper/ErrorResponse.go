@@ -1,13 +1,11 @@
 package wrapper
 
 import (
-	"encoding/json"
-	"github.com/google/uuid"
-	"log"
 	"log/slog"
-	"net/http"
 	"os"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Response struct {
@@ -23,18 +21,6 @@ func NewErrorResponse(err string, method string) *Response {
 		Message:   err,
 		Method:    method,
 		Timestamp: time.Now().Format(time.RFC3339),
-	}
-}
-
-func SendError(w http.ResponseWriter, statusCode int, err error, method string) {
-	response := NewErrorResponse(err.Error(), method)
-	log.Printf("Error ID: %s, Message: %s, Method: %s, Timestamp: %s",
-		response.ErrorID, response.Message, response.Method, response.Timestamp)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	err = json.NewEncoder(w).Encode(response)
-	if err != nil {
-		log.Printf("Failed to encode error wrapper response: %v", err)
 	}
 }
 

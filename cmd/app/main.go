@@ -26,6 +26,7 @@ func main() {
 	//migration
 	store.ApplyMigrations(config.Migration.Path, config.Migration.URL)
 
+	//TODO: FIle
 	//postgres
 	conn := db.Connect(config.DB.URL)
 	defer func(conn *pgx.Conn, ctx context.Context) {

@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
+
 	"github.com/Ablyamitov/simple-rest/internal/store/db/entity"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/redis/go-redis/v9"
-	"log/slog"
 )
 
 const (

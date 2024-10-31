@@ -37,11 +37,9 @@ func (bookHandler *BookHandlerImpl) GetAll(w http.ResponseWriter, r *http.Reques
 	books, err := bookHandler.BookRepository.GetALL(context.Background())
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			//wrapper.SendError(w, http.StatusNotFound, err, "BookHandlerImpl.GetAll")
 			wrapper.LogError(err.Error(), "BookHandlerImpl.GetAll")
 			http.Error(w, err.Error(), http.StatusNotFound)
 		} else {
-			//wrapper.SendError(w, http.StatusInternalServerError, err, "BookHandlerImpl.GetAll")
 			wrapper.LogError(err.Error(), "BookHandlerImpl.GetAll")
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
@@ -55,7 +53,6 @@ func (bookHandler *BookHandlerImpl) GetAll(w http.ResponseWriter, r *http.Reques
 		booksDTO = append(booksDTO, mapper.MapBookToDTO(&book))
 	}
 	if err := json.NewEncoder(w).Encode(booksDTO); err != nil {
-		//wrapper.SendError(w, http.StatusInternalServerError, err, "BookHandlerImpl.GetAll")
 		wrapper.LogError(err.Error(), "BookHandlerImpl.GetAll")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -65,7 +62,6 @@ func (bookHandler *BookHandlerImpl) GetAll(w http.ResponseWriter, r *http.Reques
 func (bookHandler *BookHandlerImpl) GetById(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
-		//wrapper.SendError(w, http.StatusBadRequest, err, "BookHandlerImpl.GetByID")
 		wrapper.LogError(err.Error(), "BookHandlerImpl.GetByID")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -73,11 +69,9 @@ func (bookHandler *BookHandlerImpl) GetById(w http.ResponseWriter, r *http.Reque
 	book, err := bookHandler.BookRepository.GetByID(context.Background(), id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			//wrapper.SendError(w, http.StatusNotFound, err, "BookHandlerImpl.GetById")
 			wrapper.LogError(err.Error(), "BookHandlerImpl.GetByID")
 			http.Error(w, err.Error(), http.StatusNotFound)
 		} else {
-			//wrapper.SendError(w, http.StatusInternalServerError, err, "BookHandlerImpl.GetById")
 			wrapper.LogError(err.Error(), "BookHandlerImpl.GetByID")
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
@@ -88,7 +82,6 @@ func (bookHandler *BookHandlerImpl) GetById(w http.ResponseWriter, r *http.Reque
 	w.WriteHeader(http.StatusOK)
 
 	if err := json.NewEncoder(w).Encode(mapper.MapBookToDTO(book)); err != nil {
-		//wrapper.SendError(w, http.StatusInternalServerError, err, "BookHandlerImpl.GetById")
 		wrapper.LogError(err.Error(), "BookHandlerImpl.GetByID")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -99,14 +92,12 @@ func (bookHandler *BookHandlerImpl) GetById(w http.ResponseWriter, r *http.Reque
 func (bookHandler *BookHandlerImpl) Create(w http.ResponseWriter, r *http.Request) {
 	var bookDTO *dto.BookDTO
 	if err := json.NewDecoder(r.Body).Decode(&bookDTO); err != nil {
-		//wrapper.SendError(w, http.StatusBadRequest, err, "BookHandlerImpl.Create")
 		wrapper.LogError(err.Error(), "BookHandlerImpl.Create")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if err := validation.Validate(bookDTO); err != nil {
-		//wrapper.SendError(w, http.StatusBadRequest, err, "BookHandlerImpl.Create")
 		wrapper.LogError(err.Error(), "BookHandlerImpl.Create")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -114,7 +105,6 @@ func (bookHandler *BookHandlerImpl) Create(w http.ResponseWriter, r *http.Reques
 
 	err := bookHandler.BookRepository.Create(context.Background(), mapper.MapDTOToBook(bookDTO))
 	if err != nil {
-		//wrapper.SendError(w, http.StatusInternalServerError, err, "BookHandlerImpl.Create")
 		wrapper.LogError(err.Error(), "BookHandlerImpl.Create")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -123,8 +113,6 @@ func (bookHandler *BookHandlerImpl) Create(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusOK)
 
 	if err := json.NewEncoder(w).Encode(bookDTO); err != nil {
-
-		//wrapper.SendError(w, http.StatusInternalServerError, err, "BookHandlerImpl.Create")
 		wrapper.LogError(err.Error(), "BookHandlerImpl.Create")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -134,14 +122,12 @@ func (bookHandler *BookHandlerImpl) Create(w http.ResponseWriter, r *http.Reques
 func (bookHandler *BookHandlerImpl) Update(w http.ResponseWriter, r *http.Request) {
 	var bookDTO *dto.BookDTO
 	if err := json.NewDecoder(r.Body).Decode(&bookDTO); err != nil {
-		//wrapper.SendError(w, http.StatusBadRequest, err, "BookHandlerImpl.Update")
 		wrapper.LogError(err.Error(), "BookHandlerImpl.Update")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if err := validation.Validate(bookDTO); err != nil {
-		//wrapper.SendError(w, http.StatusBadRequest, err, "BookHandlerImpl.Update")
 		wrapper.LogError(err.Error(), "BookHandlerImpl.Update")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -149,7 +135,6 @@ func (bookHandler *BookHandlerImpl) Update(w http.ResponseWriter, r *http.Reques
 
 	updatedBook, err := bookHandler.BookRepository.Update(context.Background(), mapper.MapDTOToBook(bookDTO))
 	if err != nil {
-		//wrapper.SendError(w, http.StatusInternalServerError, err, "BookHandlerImpl.Update")
 		wrapper.LogError(err.Error(), "BookHandlerImpl.Update")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -158,7 +143,6 @@ func (bookHandler *BookHandlerImpl) Update(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusOK)
 
 	if err := json.NewEncoder(w).Encode(mapper.MapBookToDTO(updatedBook)); err != nil {
-		//wrapper.SendError(w, http.StatusInternalServerError, err, "BookHandlerImpl.Update")
 		wrapper.LogError(err.Error(), "BookHandlerImpl.Update")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -169,7 +153,6 @@ func (bookHandler *BookHandlerImpl) Update(w http.ResponseWriter, r *http.Reques
 func (bookHandler *BookHandlerImpl) Delete(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
-		//wrapper.SendError(w, http.StatusBadRequest, err, "BookHandlerImpl.Delete")
 		wrapper.LogError(err.Error(), "BookHandlerImpl.Delete")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -179,7 +162,6 @@ func (bookHandler *BookHandlerImpl) Delete(w http.ResponseWriter, r *http.Reques
 
 	w.WriteHeader(http.StatusOK)
 	if err != nil {
-		//wrapper.SendError(w, http.StatusInternalServerError, err, "BookHandlerImpl.Delete")
 		wrapper.LogError(err.Error(), "BookHandlerImpl.Delete")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

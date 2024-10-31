@@ -6,7 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"github.com/golang/mock/gomock"
+	"github.com/Ablyamitov/simple-rest/internal/store/db/repository/mock"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -14,12 +14,12 @@ import (
 	"testing"
 
 	"github.com/Ablyamitov/simple-rest/internal/store/db/entity"
-	"github.com/Ablyamitov/simple-rest/internal/store/db/repository"
-
 	"github.com/go-chi/chi/v5"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
+// Без таблиц
 func TestUserHandler_GetAll(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

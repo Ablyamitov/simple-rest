@@ -5,20 +5,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Ablyamitov/simple-rest/internal/store/db/entity"
-	"github.com/Ablyamitov/simple-rest/internal/store/web/dto"
-	"github.com/go-chi/chi/v5"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Ablyamitov/simple-rest/internal/store/db/entity"
 	"github.com/Ablyamitov/simple-rest/internal/store/db/repository/mock"
+	"github.com/Ablyamitov/simple-rest/internal/store/web/dto"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
+// С таблицами
 func TestBookHandler_GetAll(t *testing.T) {
 
 	type mockBehavior func(mockRepository *repository.MockBookRepository)
