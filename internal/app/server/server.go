@@ -23,11 +23,13 @@ type HttpServer struct {
 	router *chi.Mux
 }
 
-func NewServer(userHandler *handlers.UserHandler, bookHandler *handlers.BookHandler, authHandler *handlers.AuthHandler, host string, port int) Server {
+func NewServer(userHandler handlers.UserHandler, bookHandler handlers.BookHandler, authHandler handlers.AuthHandler, secret string) Server {
 	r := chi.NewRouter()
+
 	r.Use(middleware.Logger)
-	routeUsers(r, userHandler)
-	routeBooks(r, bookHandler)
+	r.Use(middlewares.JsonContentType)
+	routeUsers(r, userHandler, secret)
+	routeBooks(r, bookHandler, secret)
 	routeAuth(r, authHandler)
 
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
@@ -43,10 +45,10 @@ func NewServer(userHandler *handlers.UserHandler, bookHandler *handlers.BookHand
 	return &HttpServer{server: srv, router: r}
 }
 
-func routeUsers(r chi.Router, userHandler *handlers.UserHandler) {
+func routeUsers(r chi.Router, userHandler handlers.UserHandler, secret string) {
 	//users
 	r.Route("/users", func(r chi.Router) {
-		r.Use(middlewares.IsAuthorized)
+		r.Use(middlewares.IsAuthorized(secret))
 
 		r.Get("/", userHandler.GetAll)            //Get All Users
 		r.Get("/{id}", userHandler.GetById)       //Get User by id
@@ -58,10 +60,10 @@ func routeUsers(r chi.Router, userHandler *handlers.UserHandler) {
 	})
 }
 
-func routeBooks(r chi.Router, bookHandler *handlers.BookHandler) {
+func routeBooks(r chi.Router, bookHandler handlers.BookHandler, secret string) {
 	//books
 	r.Route("/books", func(r chi.Router) {
-		r.Use(middlewares.IsAuthorized)
+		r.Use(middlewares.IsAuthorized(secret))
 
 		r.Get("/", bookHandler.GetAll)         //Get All Books
 		r.Get("/{id}", bookHandler.GetById)    //Get Book by id
@@ -72,11 +74,11 @@ func routeBooks(r chi.Router, bookHandler *handlers.BookHandler) {
 
 }
 
-func routeAuth(r chi.Router, authHandler *handlers.AuthHandler) {
+func routeAuth(r chi.Router, authHandler handlers.AuthHandler) {
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/register", authHandler.Register)    //User register
 		r.Post("/login", authHandler.Login)          //User login
-		r.Post("/check-auth", authHandler.CheckAuth) //check auth
+		r.Post("/check-auth", authHandler.CheckAuth) //Check auth
 	})
 }
 

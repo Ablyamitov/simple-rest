@@ -30,9 +30,9 @@ WORKDIR /app
 COPY --from=builder /app/simple-rest .
 COPY --from=migrate-installer /usr/local/bin/migrate /usr/local/bin/migrate
 
-COPY --from=builder /app/configs ./configs
-COPY --from=builder /app/internal/store/db/migrations ./internal/store/db/migrations
-ENV CONFIG_PATH=/app/configs/config.yaml
+COPY --from=builder /app/config ./config
+COPY --from=builder /app/migrations ./migrations
+ENV CONFIG_PATH=/app/config/config.yaml
 
 EXPOSE 8080
 

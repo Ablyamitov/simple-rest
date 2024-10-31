@@ -46,4 +46,4 @@ services:
       - db
       - redis
     environment:
-      - CONFIG_PATH=./configs/config.docker.yaml
+      - CONFIG_PATH=./config/config.docker.yaml

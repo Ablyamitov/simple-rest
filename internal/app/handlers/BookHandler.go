@@ -17,26 +17,37 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type BookHandler struct {
+type BookHandlerImpl struct {
 	BookRepository repository.BookRepository
 }
 
-func NewBookHandler(bookRepository repository.BookRepository) *BookHandler {
-	return &BookHandler{BookRepository: bookRepository}
+type BookHandler interface {
+	GetAll(w http.ResponseWriter, r *http.Request)
+	GetById(w http.ResponseWriter, r *http.Request)
+	Create(w http.ResponseWriter, r *http.Request)
+	Update(w http.ResponseWriter, r *http.Request)
+	Delete(w http.ResponseWriter, r *http.Request)
 }
 
-func (bookHandler *BookHandler) GetAll(w http.ResponseWriter, r *http.Request) {
+func NewBookHandler(bookRepository repository.BookRepository) BookHandler {
+	return &BookHandlerImpl{BookRepository: bookRepository}
+}
+
+func (bookHandler *BookHandlerImpl) GetAll(w http.ResponseWriter, r *http.Request) {
 	books, err := bookHandler.BookRepository.GetALL(context.Background())
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			wrapper.SendError(w, http.StatusNotFound, err, "BookHandler.GetAll")
+			//wrapper.SendError(w, http.StatusNotFound, err, "BookHandlerImpl.GetAll")
+			wrapper.LogError(err.Error(), "BookHandlerImpl.GetAll")
+			http.Error(w, err.Error(), http.StatusNotFound)
 		} else {
-			wrapper.SendError(w, http.StatusInternalServerError, err, "BookHandler.GetAll")
+			//wrapper.SendError(w, http.StatusInternalServerError, err, "BookHandlerImpl.GetAll")
+			wrapper.LogError(err.Error(), "BookHandlerImpl.GetAll")
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
 	var booksDTO []*dto.BookDTO
@@ -44,107 +55,133 @@ func (bookHandler *BookHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 		booksDTO = append(booksDTO, mapper.MapBookToDTO(&book))
 	}
 	if err := json.NewEncoder(w).Encode(booksDTO); err != nil {
-		wrapper.SendError(w, http.StatusInternalServerError, err, "BookHandler.GetAll")
+		//wrapper.SendError(w, http.StatusInternalServerError, err, "BookHandlerImpl.GetAll")
+		wrapper.LogError(err.Error(), "BookHandlerImpl.GetAll")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
-func (bookHandler *BookHandler) GetById(w http.ResponseWriter, r *http.Request) {
+func (bookHandler *BookHandlerImpl) GetById(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
-		//http.Error(w, err.Error(), http.StatusBadRequest)
-		wrapper.SendError(w, http.StatusBadRequest, err, "BookHandler.GetByID")
+		//wrapper.SendError(w, http.StatusBadRequest, err, "BookHandlerImpl.GetByID")
+		wrapper.LogError(err.Error(), "BookHandlerImpl.GetByID")
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	book, err := bookHandler.BookRepository.GetByID(context.Background(), id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			wrapper.SendError(w, http.StatusNotFound, err, "BookHandler.GetById")
+			//wrapper.SendError(w, http.StatusNotFound, err, "BookHandlerImpl.GetById")
+			wrapper.LogError(err.Error(), "BookHandlerImpl.GetByID")
+			http.Error(w, err.Error(), http.StatusNotFound)
 		} else {
-			wrapper.SendError(w, http.StatusInternalServerError, err, "BookHandler.GetById")
+			//wrapper.SendError(w, http.StatusInternalServerError, err, "BookHandlerImpl.GetById")
+			wrapper.LogError(err.Error(), "BookHandlerImpl.GetByID")
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-		//http.Error(w, err.Error(), http.StatusInternalServerError)
+
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
 	if err := json.NewEncoder(w).Encode(mapper.MapBookToDTO(book)); err != nil {
-		wrapper.SendError(w, http.StatusInternalServerError, err, "BookHandler.GetById")
+		//wrapper.SendError(w, http.StatusInternalServerError, err, "BookHandlerImpl.GetById")
+		wrapper.LogError(err.Error(), "BookHandlerImpl.GetByID")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 }
 
-func (bookHandler *BookHandler) Create(w http.ResponseWriter, r *http.Request) {
+func (bookHandler *BookHandlerImpl) Create(w http.ResponseWriter, r *http.Request) {
 	var bookDTO *dto.BookDTO
 	if err := json.NewDecoder(r.Body).Decode(&bookDTO); err != nil {
-		wrapper.SendError(w, http.StatusBadRequest, err, "BookHandler.Create")
+		//wrapper.SendError(w, http.StatusBadRequest, err, "BookHandlerImpl.Create")
+		wrapper.LogError(err.Error(), "BookHandlerImpl.Create")
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if err := validation.Validate(bookDTO); err != nil {
-		wrapper.SendError(w, http.StatusBadRequest, err, "BookHandler.Create")
+		//wrapper.SendError(w, http.StatusBadRequest, err, "BookHandlerImpl.Create")
+		wrapper.LogError(err.Error(), "BookHandlerImpl.Create")
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	err := bookHandler.BookRepository.Create(context.Background(), mapper.MapDTOToBook(bookDTO))
 	if err != nil {
-		wrapper.SendError(w, http.StatusInternalServerError, err, "BookHandler.Create")
+		//wrapper.SendError(w, http.StatusInternalServerError, err, "BookHandlerImpl.Create")
+		wrapper.LogError(err.Error(), "BookHandlerImpl.Create")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
+
 	w.WriteHeader(http.StatusOK)
 
 	if err := json.NewEncoder(w).Encode(bookDTO); err != nil {
-		//http.Error(w, err.Error(), http.StatusInternalServerError)
-		wrapper.SendError(w, http.StatusInternalServerError, err, "BookHandler.Create")
+
+		//wrapper.SendError(w, http.StatusInternalServerError, err, "BookHandlerImpl.Create")
+		wrapper.LogError(err.Error(), "BookHandlerImpl.Create")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
-func (bookHandler *BookHandler) Update(w http.ResponseWriter, r *http.Request) {
+func (bookHandler *BookHandlerImpl) Update(w http.ResponseWriter, r *http.Request) {
 	var bookDTO *dto.BookDTO
 	if err := json.NewDecoder(r.Body).Decode(&bookDTO); err != nil {
-		wrapper.SendError(w, http.StatusBadRequest, err, "BookHandler.Update")
+		//wrapper.SendError(w, http.StatusBadRequest, err, "BookHandlerImpl.Update")
+		wrapper.LogError(err.Error(), "BookHandlerImpl.Update")
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if err := validation.Validate(bookDTO); err != nil {
-		wrapper.SendError(w, http.StatusBadRequest, err, "BookHandler.Update")
+		//wrapper.SendError(w, http.StatusBadRequest, err, "BookHandlerImpl.Update")
+		wrapper.LogError(err.Error(), "BookHandlerImpl.Update")
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	updatedBook, err := bookHandler.BookRepository.Update(context.Background(), mapper.MapDTOToBook(bookDTO))
 	if err != nil {
-		wrapper.SendError(w, http.StatusInternalServerError, err, "BookHandler.Update")
+		//wrapper.SendError(w, http.StatusInternalServerError, err, "BookHandlerImpl.Update")
+		wrapper.LogError(err.Error(), "BookHandlerImpl.Update")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
 	if err := json.NewEncoder(w).Encode(mapper.MapBookToDTO(updatedBook)); err != nil {
-		wrapper.SendError(w, http.StatusInternalServerError, err, "BookHandler.Update")
+		//wrapper.SendError(w, http.StatusInternalServerError, err, "BookHandlerImpl.Update")
+		wrapper.LogError(err.Error(), "BookHandlerImpl.Update")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 }
 
-func (bookHandler *BookHandler) Delete(w http.ResponseWriter, r *http.Request) {
+func (bookHandler *BookHandlerImpl) Delete(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
-		wrapper.SendError(w, http.StatusBadRequest, err, "BookHandler.Delete")
+		//wrapper.SendError(w, http.StatusBadRequest, err, "BookHandlerImpl.Delete")
+		wrapper.LogError(err.Error(), "BookHandlerImpl.Delete")
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	err = bookHandler.BookRepository.Delete(context.Background(), id)
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err != nil {
-		wrapper.SendError(w, http.StatusInternalServerError, err, "BookHandler.Delete")
+		//wrapper.SendError(w, http.StatusInternalServerError, err, "BookHandlerImpl.Delete")
+		wrapper.LogError(err.Error(), "BookHandlerImpl.Delete")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

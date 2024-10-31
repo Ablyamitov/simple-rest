@@ -13,7 +13,7 @@ import (
 
 const (
 	SELECT_ALL_USERS = `
-				  SELECT id, name, email 
+				  SELECT id, name, email, password, role
 				  FROM users`
 
 	SELECT_ALL_USERS_BOOKS = `
@@ -85,7 +85,7 @@ func (userRepository *UserRepositoryImpl) GetAll(ctx context.Context) ([]entity.
 	var users []entity.User
 	for rows.Next() {
 		var user entity.User
-		err = rows.Scan(&user.ID, &user.Name, &user.Email)
+		err = rows.Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.Role)
 		if err != nil {
 			return nil, err
 		}

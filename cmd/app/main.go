@@ -1,11 +1,10 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
-	"path/filepath"
 
 	"github.com/Ablyamitov/simple-rest/internal/app"
 	"github.com/Ablyamitov/simple-rest/internal/app/handlers"
@@ -15,39 +14,37 @@ import (
 	"github.com/Ablyamitov/simple-rest/internal/store/db"
 	"github.com/Ablyamitov/simple-rest/internal/store/db/repository"
 	redisconn "github.com/Ablyamitov/simple-rest/internal/store/redis"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
 
-	config := app.Config
-	migrationPath, err := filepath.Abs(config.Migration.Path)
-	if err != nil {
-		log.Fatalf("Failed to get absolute path: %v", err)
-	}
-	store.ApplyMigrations(migrationPath, config.Migration.URL)
+	//conf
+	config := app.LoadConfig()
+	//migration
+	store.ApplyMigrations(config.Migration.Path, config.Migration.URL)
 
+	//postgres
 	conn := db.Connect(config.DB.URL)
-	//if err != nil {
-	//	wrapper.LogError(fmt.Sprintf("Could not connect to the database: %v", err),
-	//		"main")
-	//	os.Exit(1)
-	//}
-	//defer func(conn *pgx.Conn, ctx context.Context) {
-	//	err := conn.Close(ctx)
-	//	if err != nil {
-	//		wrapper.LogError(fmt.Sprintf("Error closing database connection: %v", err),
-	//			"main")
-	//	}
-	//}(conn, context.Background())
+	defer func(conn *pgx.Conn, ctx context.Context) {
+		err := conn.Close(ctx)
+		if err != nil {
+			wrapper.LogError(fmt.Sprintf("Сlosing database connection: %v", err),
+				"main")
+		}
+	}(conn, context.Background())
 
-	redisClient := redisconn.Connect(config)
-	//defer func(redisClient *redis.Client) {
-	//	err := redisClient.Close()
-	//	if err != nil {
-	//		wrapper.LogError(fmt.Sprintf("Error closing redis connection: %v", err),
-	//			"main")
-	//	}
-	//}(redisClient)
+	//redis
+	redisClient := redisconn.Connect(config.Redis.Addr, config.Redis.Password, config.Redis.DB)
+	defer func(redisClient *redis.Client) {
+		err := redisClient.Close()
+		if err != nil {
+			wrapper.LogError(fmt.Sprintf("Сlosing redis connection: %v", err),
+				"main")
+		}
+	}(redisClient)
 
 	userRepository := repository.NewUserRepository(conn, redisClient)
 	userHandler := handlers.NewUserHandler(userRepository)
@@ -56,7 +53,7 @@ func main() {
 	bookRepository := repository.NewBookRepository(conn, redisClient)
 	bookHandler := handlers.NewBookHandler(bookRepository)
 
-	srv := server.NewServer(userHandler, bookHandler, authHandler, config.Server.Host, config.Server.Port)
+	srv := server.NewServer(userHandler, bookHandler, authHandler, config.App.Secret)
 
 	if err := srv.Start(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		wrapper.LogError(fmt.Sprintf("Could not listen on %s:%d: %v\n", config.Server.Host, config.Server.Port, err),

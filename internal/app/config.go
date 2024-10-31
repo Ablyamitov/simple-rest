@@ -4,12 +4,6 @@ import (
 	"gopkg.in/yaml.v3"
 	"log"
 	"os"
-	"sync"
-)
-
-var (
-	Config = LoadConfig()
-	once   sync.Once
 )
 
 type Configuration struct {
@@ -39,21 +33,19 @@ func NewConfig() *Configuration {
 }
 func LoadConfig() *Configuration {
 	config := NewConfig()
-	once.Do(func() {
 
-		configPath := "./configs/config.yaml"
-		if envPath, ok := os.LookupEnv("CONFIG_PATH"); ok {
-			configPath = envPath
-		}
+	configPath := "./config/config.yaml"
+	if envPath, ok := os.LookupEnv("CONFIG_PATH"); ok {
+		configPath = envPath
+	}
 
-		configFile, err := os.ReadFile(configPath)
-		if err != nil {
-			log.Fatalf("Error reading config.yaml: %v", err)
-		}
-		err = yaml.Unmarshal(configFile, &config)
-		if err != nil {
-			log.Fatalf("Error parsing config.yaml: %v", err)
-		}
-	})
+	configFile, err := os.ReadFile(configPath)
+	if err != nil {
+		log.Fatalf("Error reading config.yaml: %v", err)
+	}
+	err = yaml.Unmarshal(configFile, &config)
+	if err != nil {
+		log.Fatalf("Error parsing config.yaml: %v", err)
+	}
 	return config
 }
